@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1773595636459,
+    "numeroOrden": "OT-1773595636459",
+    "tipo": "Preventivo",
+    "fecha": "2026-03-02",
+    "maquina": "maqquina de bolsa",
+    "area": "edmpaqued",
+    "errorFalla": "peso de maquiina",
+    "actividad": "mantenimiento",
+    "diasReparacion": "1",
+    "prioridad": "Media",
+    "estado": "Pendiente",
+    "tecnico": "n/r",
+    "reportadoPor": "fabnian",
+    "notas": "",
+    "observaciones": "",
+    "repuestos": "",
+    "creadoEn": "2026-03-15T17:27:16.459Z",
+    "actualizadoEn": "2026-03-15T17:27:16.459Z",
+    "historial": [
+      {
+        "fechaHora": "15/3/2026, 11:27:16 a. m.",
+        "accion": "Orden creada",
+        "detalle": "Estado inicial: Pendiente"
+      }
+    ]
+  }
+]

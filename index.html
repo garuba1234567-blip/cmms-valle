@@ -1,0 +1,399 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CMMS - Corporación del Valle Metropolitano</title>
+
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- FullCalendar -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css"
+        referrerpolicy="no-referrer" />
+</head>
+
+<body>
+    <!-- LOGIN -->
+    <div id="loginScreen" class="login-screen">
+
+        <!-- 🔥 BOTÓN DE IDIOMA -->
+        <button id="langToggle" class="lang-btn">ES</button>
+
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="brand-mark">V</div>
+                <div>
+                    <h1 id="loginTitle" data-i18n="loginTitle"></h1>
+                    <p id="loginSubtitle" data-i18n="loginSubtitle"></p>
+                </div>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <div>
+                    <label id="labelUser" data-i18n="user"></label>
+                    <input type="text" id="loginUser" placeholder="" required />
+                </div>
+                <div>
+                    <label id="labelPass" data-i18n="pass"></label>
+                    <input type="password" id="loginPass" placeholder="" required />
+                </div>
+
+                <button id="loginBtn" type="submit" class="btn btn-primary btn-block" data-i18n="login"></button>
+                Ingresar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div id="appRoot" class="app-shell hidden">
+        <!-- Mobile overlay -->
+        <div id="mobileOverlay" class="mobile-overlay"></div>
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">V</div>
+                <div>
+                    <h2>CMMS Valle</h2>
+                    <p>Corporación del Valle Metropolitano</p>
+                </div>
+            </div>
+
+            <div class="user-card">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <div>
+                    <strong id="userName"></strong>
+                    <p id="userRole" data-i18n="role"></p>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-view="dashboard">
+                    📊 <span data-i18n="dashboard">Dashboard</span>
+                </button>
+
+                <button class="nav-item" data-view="calendar">
+                    🗓 <span data-i18n="calendar">Calendario</span>
+                </button>
+
+                <button class="nav-item" data-view="orders">
+                    🛠 <span data-i18n="orders">Órdenes</span>
+                </button>
+
+                <button class="nav-item" data-view="machines">
+                    🏭 <span data-i18n="machines">Máquinas</span>
+                </button>
+
+                <button class="nav-item" data-view="notifications">
+                    🔔 <span data-i18n="notifications">Notificaciones</span>
+                </button>
+            </nav>
+
+            <div class="side-card">
+                <h3>IP para celular</h3>
+                <div class="ip-box">
+                    <span id="serverIp">Cargando...</span>
+                    <button id="copyIpBtn" class="btn btn-light btn-sm">Copiar</button>
+                </div>
+                <small>Abre esta IP en tu celular (misma red WiFi)</small>
+            </div>
+
+            <div class="side-logo">
+                <div class="logo-valle">
+                    <span class="logo-v">V</span><span class="logo-text">ALLE</span>
+                </div>
+                <small>CMMS de mantenimiento • versión demo</small>
+            </div>
+
+            <button id="logoutBtn" class="btn btn-danger btn-block">Cerrar sesión</button>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main-content">
+            <!-- TOPBAR -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button id="menuToggle" class="menu-toggle">☰</button>
+                    <div>
+                        <h1 id="viewTitle" data-i18n="dashboard"></h1>
+                        <p id="viewSubtitle" data-i18n="dashboardSubtitle"></p>
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
+                    <button id="topNotifBtn" class="notif-btn">
+                        🔔
+                        <span id="topNotifBadge" class="notif-dot hidden">0</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- DASHBOARD -->
+            <section id="view-dashboard" class="view-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span data-i18n="totalOrders"></span>
+                        <strong id="statTotal">0</strong>
+                    </div>
+                    <div class="stat-card">
+                        <span data-i18n="pending"></span>
+                        <strong id="statPending">0</strong>
+                    </div>
+                    <div class="stat-card">
+                        <span data-i18n="inProgress"></span>
+                        <strong id="statInProgress">0</strong>
+                    </div>
+                    <div class="stat-card">
+                        <span data-i18n="done"></span>
+                        <strong id="statDone">0</strong>
+                    </div>
+                    <div class="stat-card">
+                        <span data-i18n="late"></span>
+                        <strong id="statLate">0</strong>
+                    </div>
+                    <div class="stat-card">
+                        <span data-i18n="machines"></span>
+                        <strong id="statMachines">0</strong>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 data-i18n="recentOrders"></h3>
+                            <span class="live-pill">En vivo</span>
+                        </div>
+                        <div id="dashboardOrders" class="records-list"></div>
+                    </div>
+
+                    <div class="right-column">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2 data-i18n="createOrder"></h2>
+                            </div>
+
+                            <form id="orderForm" class="order-form">
+                                <div class="form-grid">
+                                    <div class="full">
+                                        <label data-i18n="orderTitle"></label>
+                                        <input type="text" id="orderTitle" required />
+                                    </div>
+
+                                    <div>
+                                        <label data-i18n="machine"></label>
+                                        <select id="orderMachine" required></select>
+                                        <option value="">Cargando máquinas...</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label data-i18n="assignedTo"></label>
+                                        <select id="orderAssigned" required></select>
+                                        <option value="">Cargando técnicos...</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label data-i18n="type"></label>
+                                        <select id="orderType">
+                                            <option value="Preventivo" data-i18n="preventive"></option>
+                                            <option value="Correctivo" data-i18n="corrective"></option>
+                                            <option value="Emergencia" data-i18n="emergency"></option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label data-i18n="priority"></label>
+                                        <select id="orderPriority">
+                                            <option value="Baja" data-i18n="low"></option>
+                                            <option value="Media" data-i18n="medium"></option>
+                                            <option value="Alta" data-i18n="high"></option>
+                                            <option value="Crítica" data-i18n="critical"></option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label data-i18n="scheduledDate"></label>
+                                        <input type="date" id="orderDate" required />
+                                    </div>
+
+                                    <div>
+                                        <label data-i18n="scheduledTime"></label>
+                                        <input type="time" id="orderTime" required />
+                                    </div>
+
+                                    <div class="full">
+                                        <label data-i18n="description"></label>
+                                        <textarea id="orderDescription"></textarea>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-block" data-i18n="createOrder">Crear
+                                    orden</button>
+                            </form>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3 data-i18n="quickAlerts"></h3>
+                            </div>
+                            <div id="alertsBox"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CALENDAR -->
+            <section id="view-calendar" class="view-section">
+                <div class="panel panel-calendar">
+                    <div class="panel-header">
+                        <h2 data-i18n="calendar"></h2>
+                        <span class="live-pill" data-i18n="calendarView"></span>
+                    </div>
+                    <div id="calendar" style="min-height: 400px;"></div>
+                </div>
+            </section>
+
+            <!-- ORDERS -->
+            <section id="view-orders" class="view-section">
+                <div class="panel">
+                    <div class="panel-header wrap-mobile">
+                        <h2 data-i18n="orders">Gestión de órdenes</h2>
+
+                        <div class="filters-bar">
+                            <select id="filterStatus">
+                                <option value="Todos" data-i18n="allStatuses"></option>
+                                <option value="Pendiente" data-i18n="pending"></option>
+                                <option value="En proceso" data-i18n="inProgress"></option>
+                                <option value="Pausado" data-i18n="paused"></option>
+                                <option value="Finalizado" data-i18n="done"></option>
+                            </select>
+
+                            <select id="filterType">
+                                <option value="Todos" data-i18n="allTypes"></option>
+                                <option value="Preventivo" data-i18n="preventive"></option>
+                                <option value="Correctivo" data-i18n="corrective"></option>
+                                <option value="Emergencia" data-i18n="emergency"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="ordersList" class="records-list large-list"></div>
+                </div>
+            </section>
+
+            <!-- MACHINES -->
+            <section id="view-machines" class="view-section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 data-i18n="machines"></h2>
+                        <button id="btnNewMachine" class="btn btn-primary" data-i18n="newMachine">+ Nueva
+                            máquina</button>
+                    </div>
+                    <div id="machinesList" class="machine-grid"></div>
+                </div>
+            </section>
+            <!-- NOTIFICATIONS -->
+            <section id="view-notifications" class="view-section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 data-i18n="notifications"></h2>
+                        <button id="markAllReadBtn" class="btn btn-light" data-i18n="markAllRead">Marcar todas como
+                            leídas</button>
+                    </div>
+                    <div id="notificationsList" class="notifications-list"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL NUEVA MÁQUINA -->
+    <div id="machineModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="createMachine"></h2>
+                <button id="closeMachineModal" class="btn btn-light" data-i18n="close">Cerrar</button>
+            </div>
+
+            <form id="machineForm" class="order-form">
+                <div class="form-grid">
+
+                    <div class="full">
+                        <label data-i18n="name">Nombre</label>
+                        <input type="text" id="machineName" required />
+                    </div>
+
+                    <div>
+                        <label data-i18n="area">Área</label>
+                        <input type="text" id="machineArea" required />
+                    </div>
+
+                    <div>
+                        <label data-i18n="model">Modelo</label>
+                        <input type="text" id="machineModel" />
+                    </div>
+
+                    <div>
+                        <label data-i18n="status">Estado</label>
+                        <select id="machineStatus">
+                            <option value="Operativa" data-i18n="operational">Operativa</option>
+                            <option value="Mantenimiento" data-i18n="maintenance">Mantenimiento</option>
+                            <option value="Fuera de servicio" data-i18n="outOfService">Fuera de servicio</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Guardar máquina
+                </button>
+            </form>
+        </div>
+    </div>
+    <!-- MODAL ORDEN -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 data-i18n="orderDetails">Detalle de orden</h2>
+                <button id="closeModalBtn" class="btn btn-light">Cerrar</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+    <!-- TOAST -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- FullCalendar -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+    <!-- Init Firebase -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4GnMColSExQ2Vn1kKwyZpT1Kswdkx7ik",
+            authDomain: "cmms-valle.firebaseapp.com",
+            projectId: "cmms-valle",
+            storageBucket: "cmms-valle.firebasestorage.app",
+            messagingSenderId: "500527794847",
+            appId: "1:500527794847:web:7f38de0ac6862f104e30aa"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        window.db = firebase.firestore();
+        window.firebase = firebase;
+
+        console.log("🔥 Firebase listo");
+    </script>
+
+    <!-- App -->
+    <script src="app.js"></script>
+</body>
+
+</html>
