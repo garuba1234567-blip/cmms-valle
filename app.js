@@ -354,13 +354,13 @@ const statMachines = document.getElementById("statMachines");
 // INIT
 // =========================
 document.addEventListener("DOMContentLoaded", () => {
+  fillSelects();
 
   console.log("APP CARGANDO...");
 
   function applyTranslations() {
-    const langData = LANG[currentLang];
+    const langData = (typeof LANG !== "undefined" && LANG[currentLang]) ? LANG[currentLang] : {};
 
-    // 🔹 Traducciones por data-i18n (TODO el sistema)
     document.querySelectorAll("[data-i18n]").forEach(el => {
       const key = el.dataset.i18n;
       if (langData[key]) {
@@ -368,12 +368,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // 🔹 LOGIN (placeholders especiales)
     const loginUser = document.getElementById("loginUser");
     const loginPass = document.getElementById("loginPass");
 
-    if (loginUser) loginUser.placeholder = langData.placeholderUser;
-    if (loginPass) loginPass.placeholder = langData.placeholderPass;
+    if (loginUser) loginUser.placeholder = langData.placeholderUser || "";
+    if (loginPass) loginPass.placeholder = langData.placeholderPass || "";
   }
 
   // ===== BOTÓN IDIOMA =====
@@ -389,19 +388,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
       langToggle.textContent = currentLang === "es" ? "ES" : "中文";
 
-      // 🔥 limpiar cache
-      Object.keys(uiCache).forEach(k => delete uiCache[k]);
+      if (typeof uiCache !== "undefined") {
+        Object.keys(uiCache).forEach(k => delete uiCache[k]);
+      }
 
-      // 🔥 aplicar traducciones
       applyTranslations();
 
-      // 🔥 renderizar UI
       if (typeof renderAll === "function") {
         renderAll();
       }
 
-      // 🔥 IA solo para chino
-      if (currentLang === "zh") {
+      if (currentLang === "zh" && typeof translateUI === "function") {
         setTimeout(() => translateUI(), 300);
       }
     });
@@ -434,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (machineForm) {
+  if (machineForm && typeof handleCreateMachine === "function") {
     machineForm.addEventListener("submit", handleCreateMachine);
   }
 
@@ -444,33 +441,38 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== FIREBASE =====
-  if (USE_FIREBASE_AUTH && window.firebase && firebase.auth) {
+  if (typeof USE_FIREBASE_AUTH !== "undefined" && USE_FIREBASE_AUTH && window.firebase && firebase.auth) {
+
     firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
 
     firebase.auth().onAuthStateChanged(async (user) => {
       if (user) {
-        await loadUserProfile(user);
 
-        loginScreen.classList.add("hidden");
-        appRoot.classList.remove("hidden");
+        if (typeof loadUserProfile === "function") {
+          await loadUserProfile(user);
+        }
 
-        applyUserUI();
-        initCalendar();
-        listenMachinesRealtime();
-        fillSelects();
-        listenOrdersRealtime();
-        renderAll();
-        refreshCalendar();
+        if (loginScreen) loginScreen.classList.add("hidden");
+        if (appRoot) appRoot.classList.remove("hidden");
+
+        if (typeof applyUserUI === "function") applyUserUI();
+        if (typeof initCalendar === "function") initCalendar();
+        if (typeof listenMachinesRealtime === "function") listenMachinesRealtime();
+        if (typeof fillSelects === "function") fillSelects();
+        if (typeof listenOrdersRealtime === "function") listenOrdersRealtime();
+        if (typeof renderAll === "function") renderAll();
+        if (typeof refreshCalendar === "function") refreshCalendar();
 
       } else {
         currentUser = null;
-        loginScreen.classList.remove("hidden");
-        appRoot.classList.add("hidden");
+
+        if (loginScreen) loginScreen.classList.remove("hidden");
+        if (appRoot) appRoot.classList.add("hidden");
       }
     });
   }
 
-}); // ✅ SOLO UNO
+});
 
 
 // ===== MACHINE MODAL =====
@@ -880,6 +882,47 @@ function getTodayOffset(offsetDays) {
 // SELECTS
 // =========================
 async function fillSelects() {
+  // ===== TIPOS Y PRIORIDADES =====
+  const typeSelect = document.getElementById("orderType");
+  const prioritySelect = document.getElementById("orderPriority");
+
+  if (typeSelect && prioritySelect) {
+
+    const types = [
+      { es: "Preventivo", zh: "预防性" },
+      { es: "Correctivo", zh: "纠正性" },
+      { es: "Emergencia", zh: "紧急" }
+    ];
+
+    const priorities = [
+      { es: "Baja", zh: "低" },
+      { es: "Media", zh: "中" },
+      { es: "Alta", zh: "高" },
+      { es: "Crítica", zh: "紧急" }
+    ];
+
+    // 🔹 LIMPIAR
+    typeSelect.innerHTML = "";
+    prioritySelect.innerHTML = "";
+
+    // 🔹 LLENAR TIPOS
+    types.forEach(t => {
+      typeSelect.innerHTML += `
+      <option value="${t.es}">
+        ${currentLang === "zh" ? t.zh : t.es}
+      </option>
+    `;
+    });
+
+    // 🔹 LLENAR PRIORIDADES
+    priorities.forEach(p => {
+      prioritySelect.innerHTML += `
+      <option value="${p.es}">
+        ${currentLang === "zh" ? p.zh : p.es}
+      </option>
+    `;
+    });
+  }
   try {
     if (!orderMachine || !orderAssigned) {
       console.warn("No existen los selects de orden");
