@@ -1,6 +1,13 @@
 const admin = require("firebase-admin");
 
-const serviceAccount = require("./firebaseAdmin.json");
+const serviceAccount = {
+    type: "service_account",
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    client_id: process.env.FIREBASE_CLIENT_ID,
+};
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
@@ -122,7 +129,12 @@ app.get("/api/health", (req, res) => {
         fecha: getNowISO(),
     });
 });
-const { translate } = require('@vitalets/google-translate-api');
+let translate;
+try {
+    translate = require('@vitalets/google-translate-api');
+} catch (e) {
+    console.log("Translate lib no encontrada, usando fallback...");
+}
 
 app.post("/api/translate", async (req, res) => {
     const { text, target } = req.body;
@@ -132,16 +144,23 @@ app.post("/api/translate", async (req, res) => {
             return res.json({ translated: "" });
         }
 
-        const result = await translate(text, { to: target || "zh-CN" });
+        // Si no hay librería, no rompe
+        if (!translate) {
+            return res.json({ translated: text });
+        }
+
+        const result = await translate(text, {
+            to: target || "zh-CN"
+        });
 
         return res.json({ translated: result.text });
 
     } catch (err) {
         console.error("ERROR TRADUCCIÓN:", err);
-
-        return res.json({ translated: text });
+        return res.json({ translated: text }); // fallback seguro
     }
 });
+
 /* --- Login demo --- */
 app.post("/api/login", (req, res) => {
     const { username, password } = req.body || {};
