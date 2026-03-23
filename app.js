@@ -21,119 +21,93 @@ async function autoTranslate(text, target = "zh") {
 }
 const LANG = {
   es: {
+    // LOGIN
     title: "Corporación del Valle Metropolitano",
-    subtitle: "CMMS • Acceso",
+    subtitle: "Acceso al sistema",
     user: "Usuario",
     pass: "Contraseña",
-    placeholderUser: "Correo electrónico",
-    placeholderPass: "Contraseña",
     login: "Ingresar",
+    placeholderUser: "Ej: admin",
+    placeholderPass: "1234",
 
-    assignedTo: "Asignado a",
-    type: "Tipo",
-    model: "Modelo",
-    status: "Estado",
-    view: "Ver detalle",
-    pause: "Pausar",
-    finish: "Finalizar",
-
+    // DASHBOARD
     dashboard: "Dashboard",
     orders: "Órdenes",
     machines: "Máquinas",
     notifications: "Notificaciones",
 
-    recentOrders: "Órdenes recientes",
-    quickAlerts: "Alertas rápidas",
-    late: "Atrasada",
-    taken: "Tomada por otro técnico",
-
-    noDescription: "Sin descripción",
-    noAlerts: "Sin alertas críticas",
-    createdBy: "Creada por",
-    addNote: "Agregar nota",
-
-    createOrder: "Crear orden",
-    delete: "Eliminar",
-    edit: "Editar",
-    view: "Ver",
-
-    pending: "Pendiente",
+    totalOrders: "Órdenes totales",
+    pending: "Pendientes",
     inProgress: "En proceso",
-    paused: "Pausado",
-    done: "Finalizado",
+    done: "Finalizadas",
+    late: "Atrasadas",
 
-    calendar: "Calendario",
+    recentOrders: "Órdenes recientes",
+    createOrder: "Nueva orden",
+    quickAlerts: "Alertas rápidas",
+
+    // FORM
+    type: "Tipo",
+    priority: "Prioridad",
     date: "Fecha",
-    creator: "Creador",
     description: "Descripción",
 
-    noOrders: "No hay órdenes",
-    noOrdersFilter: "No hay órdenes con esos filtros",
-    noMachines: "No hay máquinas",
+    // BOTONES
+    view: "Ver",
+    delete: "Eliminar",
 
-    assigned: "Asignado a",
-    history: "Historial",
-    notes: "Notas",
-    quickActions: "Acciones rápidas"
+    // TIPOS
+    preventive: "Preventivo",
+    corrective: "Correctivo",
+    emergency: "Emergencia",
 
+    // PRIORIDAD
+    low: "Baja",
+    medium: "Media",
+    high: "Alta",
+    critical: "Crítica"
   },
 
   zh: {
-    title: "大都会谷公司",
-    subtitle: "CMMS • 登录",
+    title: "山谷大都会公司",
+    subtitle: "系统登录",
     user: "用户",
     pass: "密码",
-    placeholderUser: "电子邮件",
-    placeholderPass: "密码",
     login: "登录",
-
-    assignedTo: "分配给",
-    type: "类型",
-    model: "型号",
-    status: "状态",
-    view: "查看",
-    pause: "暂停",
-    finish: "完成",
-
+    placeholderUser: "例如：admin",
+    placeholderPass: "1234",
 
     dashboard: "仪表板",
     orders: "工单",
     machines: "机器",
     notifications: "通知",
 
-    recentOrders: "最近工单",
-    quickAlerts: "快速警报",
-    late: "延误",
-    taken: "已被其他技术员接管",
-
-    noDescription: "无描述",
-    noAlerts: "没有警报",
-    createdBy: "创建者",
-    addNote: "添加",
-
-    createOrder: "创建工单",
-    delete: "删除",
-    edit: "编辑",
-    view: "查看",
-
+    totalOrders: "工单总数",
     pending: "待处理",
     inProgress: "进行中",
-    paused: "已暂停",
     done: "已完成",
+    late: "已延迟",
 
-    calendar: "日历",
+    recentOrders: "最近工单",
+    createOrder: "新建工单",
+    quickAlerts: "快速警报",
+
+    type: "类型",
+    priority: "优先级",
     date: "日期",
-    creator: "创建者",
     description: "描述",
 
-    noOrders: "没有工单",
-    noOrdersFilter: "没有符合条件的工单",
-    noMachines: "没有机器",
+    view: "查看",
+    delete: "删除",
 
-    assigned: "分配给",
-    history: "历史",
-    notes: "备注",
-    quickActions: "快速操作"
+    preventive: "预防性",
+    corrective: "纠正性",
+    emergency: "紧急",
+
+    low: "低",
+    medium: "中",
+    high: "高",
+    critical: "关键"
   }
 };
 let currentLang = localStorage.getItem("lang") || "es";
@@ -359,9 +333,10 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("APP CARGANDO...");
 
   function applyTranslations() {
-    const langData = (typeof LANG !== "undefined" && LANG[currentLang]) ? LANG[currentLang] : {};
+    const langData =
+      typeof LANG !== "undefined" && LANG[currentLang] ? LANG[currentLang] : {};
 
-    document.querySelectorAll("[data-i18n]").forEach(el => {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
       const key = el.dataset.i18n;
       if (langData[key]) {
         el.textContent = langData[key];
@@ -382,24 +357,35 @@ document.addEventListener("DOMContentLoaded", () => {
     langToggle.textContent = currentLang === "es" ? "ES" : "中文";
 
     langToggle.addEventListener("click", () => {
-
+      // 🔥 cambiar idioma
       currentLang = currentLang === "es" ? "zh" : "es";
       localStorage.setItem("lang", currentLang);
 
+      // 🔥 actualizar botón
       langToggle.textContent = currentLang === "es" ? "ES" : "中文";
 
+      // 🔥 limpiar cache si existe
       if (typeof uiCache !== "undefined") {
-        Object.keys(uiCache).forEach(k => delete uiCache[k]);
+        Object.keys(uiCache).forEach((k) => delete uiCache[k]);
       }
 
+      // 🔥 traducir TODO
       applyTranslations();
 
+      // 🔥 actualizar selects (MUY IMPORTANTE)
+      if (typeof fillSelects === "function") {
+        fillSelects();
+      }
+
+      // 🔥 render UI completa
       if (typeof renderAll === "function") {
         renderAll();
       }
-
+      // 🤖🔥 IA TRADUCCIÓN (LO QUE TE FALTABA)
       if (currentLang === "zh" && typeof translateUI === "function") {
-        setTimeout(() => translateUI(), 300);
+        setTimeout(() => {
+          translateUI();
+        }, 500); // espera a que render termine
       }
     });
   }
@@ -441,13 +427,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== FIREBASE =====
-  if (typeof USE_FIREBASE_AUTH !== "undefined" && USE_FIREBASE_AUTH && window.firebase && firebase.auth) {
-
+  if (
+    typeof USE_FIREBASE_AUTH !== "undefined" &&
+    USE_FIREBASE_AUTH &&
+    window.firebase &&
+    firebase.auth
+  ) {
     firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
 
     firebase.auth().onAuthStateChanged(async (user) => {
       if (user) {
-
         if (typeof loadUserProfile === "function") {
           await loadUserProfile(user);
         }
@@ -462,7 +451,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof listenOrdersRealtime === "function") listenOrdersRealtime();
         if (typeof renderAll === "function") renderAll();
         if (typeof refreshCalendar === "function") refreshCalendar();
-
       } else {
         currentUser = null;
 
@@ -471,8 +459,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-
 });
+
 
 
 // ===== MACHINE MODAL =====
