@@ -56,8 +56,8 @@
             <div class="brand">
                 <div class="brand-mark">V</div>
                 <div>
-                    <h2>CMMS Valle</h2>
-                    <p>Corporación del Valle Metropolitano</p>
+                    <h2 data-i18n="appName">CMMS Valle</h2>
+                    <p data-i18n="appSubtitle">Corporación del Valle Metropolitano</p>
                 </div>
             </div>
 
@@ -82,6 +82,10 @@
                     🛠 <span data-i18n="orders">Órdenes</span>
                 </button>
 
+                <button class="nav-item" data-view="charts" id="navCharts">
+                    📈 <span data-i18n="charts">Gráficos</span>
+                </button>
+
                 <button class="nav-item" data-view="machines">
                     🏭 <span data-i18n="machines">Máquinas</span>
                 </button>
@@ -91,23 +95,14 @@
                 </button>
             </nav>
 
-            <div class="side-card">
-                <h3>IP para celular</h3>
-                <div class="ip-box">
-                    <span id="serverIp">Cargando...</span>
-                    <button id="copyIpBtn" class="btn btn-light btn-sm">Copiar</button>
-                </div>
-                <small>Abre esta IP en tu celular (misma red WiFi)</small>
-            </div>
-
             <div class="side-logo">
                 <div class="logo-valle">
                     <span class="logo-v">V</span><span class="logo-text">ALLE</span>
                 </div>
-                <small>CMMS de mantenimiento • versión demo</small>
+                <small data-i18n="footerCopy">CMMS de mantenimiento • versión 1.0</small>
             </div>
 
-            <button id="logoutBtn" class="btn btn-danger btn-block">Cerrar sesión</button>
+            <button id="logoutBtn" class="btn btn-danger btn-block" data-i18n="logout">Cerrar sesión</button>
         </aside>
 
         <!-- MAIN -->
@@ -142,7 +137,7 @@
                         <strong id="statPending">0</strong>
                     </div>
                     <div class="stat-card">
-                        <span data-i18n="inProgress"></span>
+                        <span data-i18n="inProgress">En proceso</span>
                         <strong id="statInProgress">0</strong>
                     </div>
                     <div class="stat-card">
@@ -196,22 +191,18 @@
                                     </div>
 
                                     <div>
+                                        <label data-i18n="area"></label>
+                                        <select id="orderArea"></select>
+                                    </div>
+
+                                    <div>
                                         <label data-i18n="type"></label>
                                         <select id="orderType"></select>
-                                        <option value="Preventivo" data-i18n="preventive"></option>
-                                        <option value="Correctivo" data-i18n="corrective"></option>
-                                        <option value="Emergencia" data-i18n="emergency"></option>
-                                        </select>
                                     </div>
 
                                     <div>
                                         <label data-i18n="priority"></label>
                                         <select id="orderPriority"></select>
-                                        <option value="Baja" data-i18n="low"></option>
-                                        <option value="Media" data-i18n="medium"></option>
-                                        <option value="Alta" data-i18n="high"></option>
-                                        <option value="Crítica" data-i18n="critical"></option>
-                                        </select>
                                     </div>
 
                                     <div>
@@ -284,6 +275,17 @@
                 </div>
             </section>
 
+            <!-- CHARTS -->
+            <section id="view-charts" class="view-section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 data-i18n="charts">Gráficos</h2>
+                        <button id="exportCsvBtn" class="btn btn-light" data-i18n="exportCsv">Exportar CSV</button>
+                    </div>
+                    <div id="chartsContent" class="charts-grid"></div>
+                </div>
+            </section>
+
             <!-- MACHINES -->
             <section id="view-machines" class="view-section">
                 <div class="panel">
@@ -292,7 +294,7 @@
                         <button id="btnNewMachine" class="btn btn-primary" data-i18n="newMachine">+ Nueva
                             máquina</button>
                     </div>
-                    <div id="machinesList" class="machine-grid"></div>
+                    <div id="areasGrid" class="areas-grid"></div>
                 </div>
             </section>
             <!-- NOTIFICATIONS -->
@@ -327,7 +329,7 @@
 
                     <div>
                         <label data-i18n="area">Área</label>
-                        <input type="text" id="machineArea" required />
+                        <input type="text" id="machineArea" placeholder="Ej: Empaque" required />
                     </div>
 
                     <div>

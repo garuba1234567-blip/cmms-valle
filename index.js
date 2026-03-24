@@ -130,38 +130,34 @@ app.get("/api/health", (req, res) => {
         fecha: getNowISO(),
     });
 });
-let translate;
-try {
-    translate = require('@vitalets/google-translate-api');
-} catch (e) {
-    console.log("Translate lib no encontrada, usando fallback...");
-}
+// La librería @iamtraction/google-translate exporta la función directamente.
+// Si usamos .default obtenemos undefined y luego "translate is not a function".
+const translate = require("@iamtraction/google-translate");
 
 app.post("/api/translate", async (req, res) => {
-    const { text, target } = req.body;
-
     try {
+        const { text, target } = req.body;
+
         if (!text) {
             return res.json({ translated: "" });
-        }
-
-        // Si no hay librería, no rompe
-        if (!translate) {
-            return res.json({ translated: text });
         }
 
         const result = await translate(text, {
             to: target || "zh-CN"
         });
 
-        return res.json({ translated: result.text });
+        return res.json({
+            translated: result.text
+        });
 
     } catch (err) {
-        console.error("ERROR TRADUCCIÓN:", err);
-        return res.json({ translated: text }); // fallback seguro
+        console.error("🔥 ERROR TRADUCCIÓN:", err);
+
+        return res.json({
+            translated: req.body?.text || ""
+        });
     }
 });
-
 /* --- Login demo --- */
 app.post("/api/login", (req, res) => {
     const { username, password } = req.body || {};
