@@ -140,7 +140,131 @@ const LANG = {
     monthlyOrders: "每月工单"
   }
 };
+
+// 🔄 Completa claves de data-i18n para evitar textos sin traducir
+Object.assign(LANG.es, {
+  appName: "CMMS Valle",
+  appSubtitle: "Corporación del Valle Metropolitano",
+  area: "Área",
+  assignedTo: "Asignado a",
+  btnNewMachine: "+ Nueva máquina",
+  calendar: "Calendario",
+  charts: "Gráficos",
+  closeMachineModal: "Cerrar",
+  createMachine: "Crear máquina",
+  createOrder: "Nueva orden",
+  description: "Descripción",
+  done: "Finalizadas",
+  exportCsvBtn: "Exportar CSV",
+  footerCopy: "CMMS de mantenimiento • versión 1.0",
+  inProgress: "En proceso",
+  late: "Atrasadas",
+  live: "En vivo",
+  loginBtn: "Ingresar",
+  loginSubtitle: "Acceso al sistema",
+  loginTitle: "Corporación del Valle Metropolitano",
+  logoutBtn: "Cerrar sesión",
+  machine: "Máquina",
+  machines: "Máquinas",
+  markAllReadBtn: "Marcar todas como leídas",
+  model: "Modelo",
+  name: "Nombre",
+  notifications: "Notificaciones",
+  orderDetails: "Detalle de orden",
+  orderTitle: "Título de la orden",
+  priority: "Prioridad",
+  quickAlerts: "Alertas rápidas",
+  recentOrders: "Órdenes recientes",
+  scheduledDate: "Fecha",
+  scheduledTime: "Hora",
+  status: "Estado",
+  submit: "Enviar",
+  totalOrders: "Órdenes totales",
+  type: "Tipo",
+  userRole: "Rol",
+  viewTitle: "Dashboard",
+  viewSubtitle: "",
+  Preventivo: "Preventivo",
+  Correctivo: "Correctivo",
+  Emergencia: "Emergencia",
+  "En proceso": "En proceso",
+  Pendiente: "Pendiente",
+  Pausado: "Pausado",
+  Finalizado: "Finalizado",
+  Operativa: "Operativa",
+  Mantenimiento: "Mantenimiento",
+  "Fuera de servicio": "Fuera de servicio",
+  Todos: "Todos",
+  "live-pill": "En vivo",
+  close: "Cerrar",
+  quickActions: "Acciones rápidas",
+  notes: "Notas",
+  addNote: "Agregar nota",
+  history: "Historial"
+});
+
+Object.assign(LANG.zh, {
+  appName: "CMMS 山谷",
+  appSubtitle: "山谷大都会公司",
+  area: "区域",
+  assignedTo: "指派给",
+  btnNewMachine: "新建机器",
+  calendar: "日历",
+  charts: "图表",
+  closeMachineModal: "关闭",
+  createMachine: "创建机器",
+  createOrder: "新建工单",
+  description: "描述",
+  done: "已完成",
+  exportCsvBtn: "导出 CSV",
+  footerCopy: "维护管理系统 • 版本 1.0",
+  inProgress: "进行中",
+  late: "逾期",
+  live: "实时",
+  loginBtn: "登录",
+  loginSubtitle: "系统登录",
+  loginTitle: "山谷大都会公司",
+  logoutBtn: "退出登录",
+  machine: "机器",
+  machines: "机器",
+  markAllReadBtn: "全部标记为已读",
+  model: "型号",
+  name: "名称",
+  notifications: "通知",
+  orderDetails: "工单详情",
+  orderTitle: "工单标题",
+  priority: "优先级",
+  quickAlerts: "快速警报",
+  recentOrders: "最近工单",
+  scheduledDate: "日期",
+  scheduledTime: "时间",
+  status: "状态",
+  submit: "提交",
+  totalOrders: "工单总数",
+  type: "类型",
+  userRole: "角色",
+  viewTitle: "仪表板",
+  viewSubtitle: "",
+  Preventivo: "预防性",
+  Correctivo: "纠正性",
+  Emergencia: "紧急",
+  "En proceso": "进行中",
+  Pendiente: "待处理",
+  Pausado: "暂停",
+  Finalizado: "完成",
+  Operativa: "运行中",
+  Mantenimiento: "维护中",
+  "Fuera de servicio": "停机",
+  Todos: "全部",
+  "live-pill": "实时",
+  close: "关闭",
+  quickActions: "快捷操作",
+  notes: "备注",
+  addNote: "添加备注",
+  history: "历史记录"
+});
 let currentLang = localStorage.getItem("lang") || "es";
+const VAPID_KEY = "BOeszSHKRYfMR0YWFtDkbBS5EkEy3h97APKSBVOrSBUJudJIL3ZMOuADehSTN6hUcluoF8ASDUvKp_p4uRxaUdI";
 console.log("APP CARGANDO...");
 
 function t(key) {
@@ -289,11 +413,13 @@ function listenOrdersRealtime() {
         incoming.forEach(o => {
           ensureOrderTranslation(o);
         });
-        orders = incoming;
+    orders = incoming;
 
-    // 🔥 traducir después de guardar
+    // 🔥 traducir después de guardar (solo cuando ya tenemos id string)
     orders.forEach((o, i) => {
-      setTimeout(() => ensureOrderTranslation(o), i * 200);
+      if (typeof o.id === "string") {
+        setTimeout(() => ensureOrderTranslation(o), i * 150);
+      }
     });
 
     // Forzar re-render según idioma actual
@@ -334,9 +460,78 @@ function listenOrdersRealtime() {
   }
 }
 
+function listenTechsRealtime() {
+  if (!window.db || !window.firebase || !window.firebase.firestore) return;
+
+  if (typeof unsubscribeTechs === "function") {
+    unsubscribeTechs();
+    unsubscribeTechs = null;
+  }
+
+  try {
+    const usersRef = window.db.collection("users");
+    unsubscribeTechs = usersRef.onSnapshot(
+      (snap) => {
+        let count = 0;
+        snap.forEach(doc => {
+          const data = doc.data() || {};
+          const roleNorm = normalizeRole(data.role || data.rol);
+          const isTech = roleNorm === "tecnico";
+          if (isTech && !!data.onDuty) count++;
+        });
+        techsOnDutyCount = count;
+        updateTechBadge();
+        // refresco de selects sin recargar la página
+        fillSelects();
+        if (typeof renderOrdersList === "function") {
+          renderOrdersList();
+        }
+      },
+      (err) => {
+        console.error("Error en realtime de técnicos:", err);
+        // fallback a lectura puntual si falla el realtime
+        fetchTechsOnce();
+      }
+    );
+  } catch (err) {
+    console.error("listenTechsRealtime falló:", err);
+    fetchTechsOnce();
+  }
+}
+
+async function fetchTechsOnce() {
+  if (!window.db) return;
+  try {
+    const snap = await window.db.collection("users").get();
+    let count = 0;
+    const techList = [];
+    snap.forEach(doc => {
+      const data = doc.data() || {};
+      const roleNorm = normalizeRole(data.role || data.rol);
+      const isTech = roleNorm === "tecnico";
+      if (isTech && !!data.onDuty) count++;
+      if (isTech) techList.push({ ...data, id: doc.id });
+    });
+    techsOnDutyCount = count;
+    // Solo técnicos con nombre válido, para el selector de asignar (sin filtrar onDuty)
+    allTechnicians = techList.filter(t => (t.name || t.nombre || t.username));
+    updateTechBadge();
+    fillSelects();
+    if (typeof renderOrdersList === "function") renderOrdersList();
+  } catch (err) {
+    console.error("fetchTechsOnce error:", err);
+  }
+}
+
 let notifications = JSON.parse(localStorage.getItem("cmms_notifications") || "[]");
 let calendar = null;
 let currentModalOrderId = null;
+let isOrderSubmitting = false;
+let isMachineSubmitting = false;
+let unsubscribeTechs = null;
+let techsOnDutyCount = 0;
+let techsPollInterval = null;
+let allTechnicians = []; // todos los técnicos (sin filtrar onDuty) para re-asignar
 
 // =========================
 // DOM
@@ -359,6 +554,8 @@ const navItems = document.querySelectorAll(".nav-item");
 const viewTitle = document.getElementById("viewTitle");
 const viewSubtitle = document.getElementById("viewSubtitle");
 const navCharts = document.getElementById("navCharts");
+const adminOnlyEls = document.querySelectorAll(".admin-only");
+const onDutyBtn = document.getElementById("onDutyBtn");
 
 const logoutBtn = document.getElementById("logoutBtn");
 const copyIpBtn = document.getElementById("copyIpBtn");
@@ -401,15 +598,19 @@ function applyTranslations() {
   const langData = LANG[currentLang];
   if (!langData) return;
 
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.dataset.i18n;
-    if (langData[key]) el.textContent = langData[key];
-  });
+  try {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.dataset.i18n;
+      if (langData[key]) el.textContent = langData[key];
+    });
+  } catch (err) {
+    console.error("applyTranslations data-i18n error", err);
+  }
 
   const loginUserEl = document.getElementById("loginUser");
   const loginPassEl = document.getElementById("loginPass");
-  if (loginUserEl) loginUserEl.placeholder = langData.placeholderUser;
-  if (loginPassEl) loginPassEl.placeholder = langData.placeholderPass;
+  if (loginUserEl) loginUserEl.placeholder = langData.placeholderUser || "Usuario";
+  if (loginPassEl) loginPassEl.placeholder = langData.placeholderPass || "Contraseña";
 }
 
 // Re-render global UI to reflect the active language
@@ -422,17 +623,65 @@ function renderAllViews() {
   }
 }
 
+function requestCriticalNotifications() {
+  if (typeof Notification === "undefined") return;
+  if (!currentUser) return;
+  const mustPrompt = currentUser.role === "admin" || currentUser.role === "tecnico";
+  if (!mustPrompt) return;
+  if (Notification.permission === "granted") return;
+  Notification.requestPermission().then(res => {
+    if (res !== "granted") {
+      showToast("Activa notificaciones para no perder órdenes nuevas", "warning");
+    }
+  }).catch(() => {
+    showToast("No se pudieron activar notificaciones", "warning");
+  });
+}
+
+async function registerFcmToken(user) {
+  try {
+    if (!window.firebase || !window.firebase.messaging || !user) return;
+    const messaging = firebase.messaging();
+
+    // Registrar SW
+    const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+
+    const token = await messaging.getToken({
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: reg
+    });
+
+    if (!token) {
+      console.warn("No se obtuvo token FCM");
+      return;
+    }
+
+    // Guardar token en Firestore en users/{uid}
+    if (window.db && user.uid) {
+      await window.db.collection("users").doc(user.uid).set({
+        fcmToken: token,
+        fcmUpdatedAt: new Date().toISOString()
+      }, { merge: true });
+    }
+    console.log("FCM token listo");
+  } catch (err) {
+    console.warn("FCM error (ignorado)", err?.message || err);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   console.log("APP CARGANDO...");
 
   // 🔥 idioma inicial
   currentLang = localStorage.getItem("lang") || "es";
+  document.documentElement.setAttribute("lang", currentLang);
 
   // 🔥 cargar selects primero
   fillSelects();
 
   // 🔥 aplicar idioma base
   applyTranslations();
+  if (currentLang === "es") restoreUIOriginals();
 
   // 🔥 render UI
   if (typeof renderAll === "function") renderAll();
@@ -458,6 +707,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // 🔥 cambiar idioma
       currentLang = currentLang === "es" ? "zh" : "es";
       localStorage.setItem("lang", currentLang);
+      document.documentElement.setAttribute("lang", currentLang);
 
       // 🔥 actualizar botón
       langToggle.textContent = currentLang === "es" ? "ES" : "中文";
@@ -467,7 +717,10 @@ document.addEventListener("DOMContentLoaded", () => {
         Object.keys(uiCache).forEach((k) => delete uiCache[k]);
       }
 
-      // 🔥 traducir TODO
+      // 🔥 restaurar si volvemos a ES y aplicar traducciones base
+      if (currentLang === "es") {
+        restoreUIOriginals();
+      }
       applyTranslations();
 
       // 🔥 actualizar selects (MUY IMPORTANTE)
@@ -558,6 +811,12 @@ document.addEventListener("DOMContentLoaded", () => {
           const isAdmin = currentUser && currentUser.role === "admin";
           navCharts.style.display = isAdmin ? "block" : "none";
         }
+        // Mostrar/ocultar controles admin-only
+        adminOnlyEls.forEach(el => {
+          el.style.display = (currentUser && currentUser.role === "admin") ? "" : "none";
+        });
+        requestCriticalNotifications();
+        await registerFcmToken(user);
       } else {
         currentUser = null;
         if (loginScreen) loginScreen.classList.remove("hidden");
@@ -653,6 +912,10 @@ function bindEvents() {
     topNotifBtn.addEventListener("click", () => setActiveView("notifications"));
   }
 
+  if (onDutyBtn) {
+    onDutyBtn.addEventListener("click", toggleOnDuty);
+  }
+
   if (markAllReadBtn) {
     markAllReadBtn.addEventListener("click", markAllNotificationsRead);
   }
@@ -683,6 +946,10 @@ function handleLogin(e) {
         applyUserUI();
         initCalendar();
         listenMachinesRealtime();
+        listenTechsRealtime();
+        fetchTechsOnce();
+        if (techsPollInterval) clearInterval(techsPollInterval);
+        techsPollInterval = setInterval(fetchTechsOnce, 15000);
         fillSelects();
         listenOrdersRealtime();
         renderAll();
@@ -719,6 +986,10 @@ function handleLogin(e) {
   applyUserUI();
   initCalendar();
   listenMachinesRealtime();
+  listenTechsRealtime();
+  fetchTechsOnce();
+  if (techsPollInterval) clearInterval(techsPollInterval);
+  techsPollInterval = setInterval(fetchTechsOnce, 15000);
   fillSelects();
   listenOrdersRealtime();
   renderAll();
@@ -737,6 +1008,14 @@ function logout() {
   if (typeof unsubscribeOrders === "function") {
     unsubscribeOrders();
     unsubscribeOrders = null;
+  }
+  if (typeof unsubscribeTechs === "function") {
+    unsubscribeTechs();
+    unsubscribeTechs = null;
+  }
+  if (techsPollInterval) {
+    clearInterval(techsPollInterval);
+    techsPollInterval = null;
   }
 
   localStorage.clear();
@@ -767,6 +1046,25 @@ function applyUserUI() {
   if (btnNewMachine) {
     btnNewMachine.style.display = currentUser.role === "admin" ? "inline-flex" : "none";
   }
+
+  // Solo admin ve la sección de gráficos
+  const navChartsBtn = document.getElementById("navCharts");
+  if (navChartsBtn) {
+    navChartsBtn.style.display = currentUser.role === "admin" ? "block" : "none";
+  }
+
+  // Botón de "En turno" visible solo para técnicos
+  if (onDutyBtn) {
+    if (currentUser.role === "tecnico") {
+      onDutyBtn.style.display = "inline-flex";
+      updateOnDutyUI();
+    } else {
+      onDutyBtn.style.display = "none";
+    }
+  }
+
+  // Actualiza indicador de técnicos en turno
+  updateTechBadge();
 }
 
 // =========================
@@ -786,6 +1084,10 @@ function closeSidebar() {
 // VIEWS
 // =========================
 function setActiveView(view) {
+  if (view === "charts" && (!currentUser || currentUser.role !== "admin")) {
+    showToast("Solo el admin puede ver los gráficos", "warning");
+    return;
+  }
   if (view === "charts") {
     renderCharts();
   }
@@ -798,10 +1100,11 @@ function setActiveView(view) {
 
   const titles = {
     dashboard: [t("dashboard"), ""],
-    calendar: ["日历", ""],
+    calendar: [t("calendar"), ""],
     orders: [t("orders"), ""],
     machines: [t("machines"), ""],
-    notifications: [t("notifications"), ""]
+    notifications: [t("notifications"), ""],
+    charts: [t("charts"), ""]
   };
   viewTitle.textContent = titles[view][0];
   viewSubtitle.textContent = titles[view][1];
@@ -829,6 +1132,32 @@ function saveNotifications() {
 
 function generateId() {
   return Date.now() + Math.floor(Math.random() * 1000);
+}
+
+function updateTechBadge() {
+  const badge = document.getElementById("techOnlineBadge");
+  if (!badge) return;
+  // Solo visible para admin / coordinador
+  if (!currentUser || (currentUser.role !== "admin" && currentUser.role !== "coordinador")) {
+    badge.classList.add("hidden");
+    return;
+  }
+  badge.textContent = techsOnDutyCount;
+  badge.title = `${techsOnDutyCount} técnicos en turno`;
+  badge.classList.remove("hidden");
+}
+
+// Elimina opciones duplicadas en un select por value
+function dedupeSelect(selectEl) {
+  if (!selectEl) return;
+  const seen = new Set();
+  [...selectEl.options].forEach(opt => {
+    if (seen.has(opt.value)) {
+      opt.remove();
+    } else {
+      seen.add(opt.value);
+    }
+  });
 }
 
 function nowString() {
@@ -884,7 +1213,8 @@ async function loadUserProfile(user) {
       uid: user.uid,
       username: user.email,
       role: role,
-      name: name
+      name: name,
+      onDuty: doc.exists ? !!doc.data().onDuty : false
     };
 
   } catch (err) {
@@ -895,7 +1225,8 @@ async function loadUserProfile(user) {
       uid: user.uid,
       username: user.email,
       role: "tecnico",
-      name: user.email || "Usuario"
+      name: user.email || "Usuario",
+      onDuty: false
     };
   }
 }
@@ -908,12 +1239,25 @@ function getVisibleOrdersForUser() {
     return orders;
   }
 
-  // COORDINADOR Y TÉCNICO VEN TODO (OPERACIÓN EN RED)
-  if (currentUser.role === "coordinador" || currentUser.role === "tecnico") {
+  // COORDINADOR VE TODO
+  if (currentUser.role === "coordinador") {
     return orders;
   }
 
+  // TÉCNICO: solo las asignadas a él o sin asignar (opcional)
+  if (currentUser.role === "tecnico") {
+    return orders.filter(o =>
+      o.assignedTo === currentUser.name ||
+      o.assignedTo === "Técnico de Mantenimiento"
+    );
+  }
+
   return [];
+}
+
+// Para vistas globales (dashboard, calendario) se muestran todas las órdenes
+function getOrdersForDashboard() {
+  return orders;
 }
 async function ensureOrderTranslation(order) {
   try {
@@ -955,16 +1299,16 @@ async function ensureOrderTranslation(order) {
     order.priority_zh = priority_zh;
     order.area_zh = area_zh;
 
-    // Si hay Firebase disponible, persistimos
-    if (window.db && order.id) {
-      await window.db.collection("orders").doc(order.id).update({
+    // Si hay Firebase disponible, persistimos (solo si el id es string)
+    if (window.db && order.id && typeof order.id === "string") {
+      await window.db.collection("orders").doc(order.id).set({
         title_zh,
         machine_zh,
         description_zh,
         type_zh,
         priority_zh,
         area_zh
-      });
+      }, { merge: true });
       console.log("✅ Orden traducida:", order.id);
     }
 
@@ -1009,6 +1353,7 @@ async function ensureMachineTranslation(machine) {
 
 // Traduce nota al vuelo si estamos en chino; cache simple por texto original
 const noteCache = {};
+const historyCache = {};
 function formatNote(note) {
   if (currentLang !== "zh") return note;
   if (!note) return "";
@@ -1024,6 +1369,21 @@ function formatNote(note) {
     .catch(() => { /* ignore */ });
 
   return note; // mientras tanto muestra original
+}
+
+function formatHistoryItem(text) {
+  if (currentLang !== "zh") return text;
+  if (!text) return "";
+  if (historyCache[text]) return historyCache[text];
+
+  autoTranslate(text)
+    .then((translated) => {
+      historyCache[text] = translated;
+      if (typeof renderAll === "function") renderAll();
+    })
+    .catch(() => { /* ignore */ });
+
+  return text;
 }
 
 // Traduce en bloque todas las órdenes y máquinas cuando el usuario cambia a chino.
@@ -1178,10 +1538,12 @@ async function fillSelects() {
     }
 
     // Placeholders (solo placeholders, sin datos locales)
-    const phMachine = currentLang === "zh" ? "选择机器" : "Seleccione una máquina";
-    const phTech = currentLang === "zh" ? "选择技术员" : "Seleccione un técnico";
-    orderMachine.innerHTML = `<option value="">${phMachine}</option>`;
-    orderAssigned.innerHTML = `<option value="">${phTech}</option>`;
+  const phMachine = currentLang === "zh" ? "选择机器" : "Seleccione una máquina";
+  const phTech = currentLang === "zh" ? "选择技术员" : "Seleccione un técnico";
+  orderMachine.innerHTML = `<option value="">${phMachine}</option>`;
+  orderMachine.disabled = true;
+  orderAssigned.innerHTML = `<option value="">${phTech}</option>`;
+  dedupeSelect(orderAssigned);
 
     // Solo cargar cuando hay usuario logueado
     if (!currentUser) {
@@ -1231,28 +1593,31 @@ async function fillSelects() {
       techSnap = { empty: true, forEach: () => { } };
     }
 
-    // Opción de disponibilidad
-    orderAssigned.innerHTML += `<option value="Disponible">${currentLang === "zh" ? "可用" : "Disponible"}</option>`;
-
     let techsFound = 0;
 
     if (!techSnap.empty) {
       techSnap.forEach(doc => {
         const user = doc.data();
 
-        // Solo usuarios con rol técnico
-        if (user.role === "tecnico" || user.rol === "tecnico") {
+        const roleNorm = normalizeRole(user.role || user.rol);
+        if (roleNorm === "tecnico") {
           const techName =
             user.name ||
             user.nombre ||
             user.username ||
-            `Técnico ${doc.id}`;
-
-          orderAssigned.innerHTML += `<option value="${techName}">${techName}</option>`;
-          techsFound++;
+            "";
+          if (!techName) return;
+          // Formulario: solo técnicos EN TURNO
+          if (user.onDuty) {
+            orderAssigned.innerHTML += `<option value="${techName}">${techName}</option>`;
+            techsFound++;
+          }
         }
       });
     }
+
+    // Quitar duplicados por valor
+    dedupeSelect(orderAssigned);
 
     // Si no encontró técnicos en Firebase, deja solo placeholder + Disponible
 
@@ -1271,8 +1636,10 @@ function populateMachinesForArea(areaValue) {
 
   const phMachine = currentLang === "zh" ? "选择机器" : "Seleccione una máquina";
   orderMachine.innerHTML = `<option value="">${phMachine}</option>`;
+  orderMachine.disabled = true;
 
   if (!Array.isArray(machinesFirebase) || !machinesFirebase.length) return;
+  if (!areaValue) return;
 
   const seenKey = new Set();
   machinesFirebase.forEach(m => {
@@ -1285,6 +1652,12 @@ function populateMachinesForArea(areaValue) {
     seenKey.add(key);
     orderMachine.innerHTML += `<option value="${name}">${name}</option>`;
   });
+
+  if (orderMachine.options.length > 1) {
+    orderMachine.disabled = false;
+  }
+
+  dedupeSelect(orderMachine);
 }
 
 // =========================
@@ -1292,9 +1665,19 @@ function populateMachinesForArea(areaValue) {
 // =========================
 async function handleCreateOrder(e) {
   e.preventDefault();
+  if (isOrderSubmitting) return;
+  isOrderSubmitting = true;
+  const submitBtn = orderForm?.querySelector("button[type='submit']");
+  const prevLabel = submitBtn?.textContent;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = currentLang === "zh" ? "保存中..." : "Guardando...";
+  }
 
   if (!currentUser || (currentUser.role !== "admin" && currentUser.role !== "coordinador")) {
     showToast("No tienes permiso para crear órdenes", "warning");
+    isOrderSubmitting = false;
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
     return;
   }
 
@@ -1307,6 +1690,11 @@ async function handleCreateOrder(e) {
 
   if (!area) {
     showToast("Selecciona un área", "warning");
+    isOrderSubmitting = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = prevLabel;
+    }
     return;
   }
 
@@ -1363,6 +1751,11 @@ async function handleCreateOrder(e) {
         id: newOrder.id
       });
 
+      // Notificación de asignación (push / navegador)
+      if (newOrder.assignedTo && newOrder.assignedTo !== "Disponible") {
+        showBrowserNotification("Orden asignada", `${newOrder.assignedTo}: ${newOrder.title}`);
+      }
+
       showToast("Orden creada en Firebase 🔥", "success");
     } else {
       // Sin Firebase: guarda en memoria para no bloquear la UI
@@ -1388,6 +1781,12 @@ async function handleCreateOrder(e) {
   } catch (err) {
     console.error(err);
     showToast("Error guardando en Firebase", "error");
+  } finally {
+    isOrderSubmitting = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = prevLabel;
+    }
   }
 }
 // =========================
@@ -1409,7 +1808,7 @@ function renderAll() {
 function renderAlerts() {
   if (!alertsBox) return;
 
-  const lateOrders = getVisibleOrdersForUser().filter(isLate);
+  const lateOrders = getOrdersForDashboard().filter(isLate);
 
   if (!lateOrders.length) {
     alertsBox.innerHTML = `<div>${t("noAlerts")}</div>`;
@@ -1428,7 +1827,7 @@ function renderAlerts() {
 }
 
 function renderStats() {
-  const visibleOrders = getVisibleOrdersForUser();
+  const visibleOrders = getOrdersForDashboard();
 
   statTotal.textContent = visibleOrders.length;
   statPending.textContent = visibleOrders.filter(o => o.status === "Pendiente").length;
@@ -1620,16 +2019,115 @@ function renderCharts() {
 
   const exportBtn = document.getElementById("exportCsvBtn");
   if (exportBtn) {
-    exportBtn.onclick = () => exportOrdersCsv();
+    exportBtn.onclick = () => exportOrdersXlsx();
+  }
+  const tplBtn = document.getElementById("downloadTemplateBtn");
+  if (tplBtn) {
+    tplBtn.onclick = () => downloadTemplate();
   }
 }
 
-function exportOrdersCsv() {
-  const headers = ["id", "title", "machine", "area", "type", "priority", "status", "date", "time", "assignedTo", "createdAt", "isLate"];
+function exportOrdersXlsx() {
+  // Si no está XLSX, fallback a CSV simple
+  if (typeof XLSX === "undefined") {
+    return exportOrdersCsvFallback();
+  }
+
+  const wb = XLSX.utils.book_new();
+  const today = new Date().toISOString().split("T")[0];
+
+  // Hoja detallada
+  const detailHeaders = [
+    "Fecha", "Hora", "Área", "Máquina", "Título",
+    "Tipo", "Prioridad", "Estado", "Asignado a",
+    "Creado por", "Creado en", "Atrasada"
+  ];
+  const detailRows = orders.map(o => {
+    const isLate = o.status !== "Finalizado" && o.date && o.date < today;
+    return [
+      o.date || "",
+      o.time || "",
+      o.area || "",
+      o.machine || "",
+      o.title || "",
+      o.type || "",
+      o.priority || "",
+      o.status || "",
+      o.creadorNombre || o.creadoPor || "",
+      o.createdAt || "",
+      isLate ? "Sí" : "No"
+    ];
+  });
+  const detailSheet = XLSX.utils.aoa_to_sheet([detailHeaders, ...detailRows]);
+  XLSX.utils.book_append_sheet(wb, detailSheet, "Órdenes");
+
+  // Hoja resumen por estado y por técnico
+  const statusCount = {};
+  const techCount = {};
+  orders.forEach(o => {
+    statusCount[o.status] = (statusCount[o.status] || 0) + 1;
+    const tech = o.assignedTo || "Sin asignar";
+    techCount[tech] = (techCount[tech] || 0) + 1;
+  });
+  const summaryRows = [
+    ["Resumen por estado"],
+    ["Estado", "Cantidad"],
+    ...Object.entries(statusCount),
+    [],
+    ["Órdenes por técnico"],
+    ["Técnico", "Cantidad"],
+    ...Object.entries(techCount)
+  ];
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
+  XLSX.utils.book_append_sheet(wb, summarySheet, "Resumen");
+
+  // Exportar
+  XLSX.writeFile(wb, "ordenes.xlsx");
+}
+
+// Descarga una plantilla estática con gráficos (preparada externamente).
+function downloadTemplate() {
+  // Archivo local servido por express.static (ej: https://cmms-valle.onrender.com/plantilla_gerencia.xlsx)
+  const url = "/plantilla_gerencia.xlsx";
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "plantilla_gerencia.xlsx";
+  link.click();
+}
+
+function exportOrdersCsvFallback() {
+  const headers = [
+    "Fecha",
+    "Hora",
+    "Área",
+    "Máquina",
+    "Título",
+    "Tipo",
+    "Prioridad",
+    "Estado",
+    "Asignado a",
+    "Creado por",
+    "Creado en",
+    "Atrasada"
+  ];
   const today = new Date().toISOString().split("T")[0];
   const rows = orders.map(o => {
     const isLate = o.status !== "Finalizado" && o.date && o.date < today;
-    return headers.map(h => `"${((h === "isLate" ? isLate : o[h]) || "").toString().replace(/"/g, '""')}"`).join(",");
+    const created = o.createdAt || "";
+    return [
+      o.date || "",
+      o.time || "",
+      o.area || "",
+      o.machine || "",
+      o.title || "",
+      o.type || "",
+      o.priority || "",
+      o.status || "",
+      o.assignedTo || "",
+      o.creadorNombre || o.creadoPor || "",
+      created,
+      isLate ? "Sí" : "No"
+    ].map(v => `"${(v || "").toString().replace(/"/g, '""')}"`).join(",");
   });
   const csv = [headers.join(","), ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -1684,7 +2182,7 @@ function forcePriorityLabel(priority) {
 }
 
 function renderDashboardOrders() {
-  const visibleOrders = getVisibleOrdersForUser().slice(0, 8);
+  const visibleOrders = getOrdersForDashboard().slice(0, 8);
 
   // Si estamos en chino y falta traducción, asegúrala antes de pintar
   visibleOrders.forEach(o => {
@@ -1792,6 +2290,7 @@ function buildOrderActions(order) {
     }
 
     buttons += `<button class="btn-danger order-delete" data-action="delete" data-id="${order.id}">${txt.delete}</button>`;
+    buttons += `<button class="btn-secondary order-assign" data-action="assign" data-id="${order.id}">${currentLang === "zh" ? "分配" : "Asignar"}</button>`;
   }
 
   if (currentUser.role === "tecnico") {
@@ -1898,6 +2397,7 @@ function orderCardHTML(order) {
       <div class="record-actions">
         <button class="btn-light order-view" data-id="${order.id}">Ver detalle</button>
         ${actions}
+        ${currentUser && currentUser.role === "admin" ? `<button class="btn-secondary order-assign" data-id="${order.id}">${currentLang === "zh" ? "分配" : "Asignar"}</button>` : ""}
       </div>
     </div>
   `;
@@ -1968,6 +2468,10 @@ function attachOrderButtons() {
 
   document.querySelectorAll(".order-delete").forEach(btn => {
     btn.onclick = () => deleteOrder(btn.dataset.id);
+  });
+
+  document.querySelectorAll(".order-assign").forEach(btn => {
+    btn.onclick = () => openAssignModal(btn.dataset.id);
   });
 }
 
@@ -2081,6 +2585,50 @@ function canEditOrder(order) {
 }
 
 // =========================
+// EN TURNO (ON DUTY)
+// =========================
+function updateOnDutyUI() {
+  if (!onDutyBtn || !currentUser) return;
+  const state = !!currentUser.onDuty;
+  onDutyBtn.textContent = state ? "En turno" : "Fuera de turno";
+  onDutyBtn.classList.toggle("btn-success", state);
+  onDutyBtn.classList.toggle("btn-light", !state);
+}
+
+async function toggleOnDuty() {
+  if (!currentUser || currentUser.role !== "tecnico") return;
+  const newState = !currentUser.onDuty;
+  try {
+    onDutyBtn.disabled = true;
+    const userDocId = currentUser.uid || currentUser.username;
+    if (window.db && userDocId) {
+      await window.db.collection("users").doc(userDocId).set({
+        onDuty: newState,
+        role: currentUser.role,
+        name: currentUser.name,
+        username: currentUser.username
+      }, { merge: true });
+    }
+    currentUser.onDuty = newState;
+    // Ajuste inmediato mientras llega el realtime
+    techsOnDutyCount = Math.max(0, techsOnDutyCount + (newState ? 1 : -1));
+    updateTechBadge();
+    updateOnDutyUI();
+    showToast(newState ? "Marcado en turno" : "Marcado fuera de turno", "success");
+    // Refrescar select de técnicos para que solo aparezcan los en turno
+    fillSelects();
+    if (typeof renderOrdersList === "function") {
+      renderOrdersList();
+    }
+  } catch (err) {
+    console.error("No se pudo actualizar en turno", err);
+    showToast("No se pudo cambiar el estado de turno", "error");
+  } finally {
+    if (onDutyBtn) onDutyBtn.disabled = false;
+  }
+}
+
+// =========================
 // MODAL
 // =========================
 function openOrderModal(orderId) {
@@ -2135,7 +2683,7 @@ function openOrderModal(orderId) {
   <div class="modal-section">
     <h3>${t("history")}</h3>
     <div class="history-box">
-      ${(order.history || []).map(h => `<div class="history-item">${h}</div>`).join("") || `<div class="history-item">${t("noDescription")}</div>`}
+      ${(order.history || []).map(h => `<div class="history-item">${formatHistoryItem(h)}</div>`).join("") || `<div class="history-item">${t("noDescription")}</div>`}
     </div>
   </div>
 
@@ -2151,6 +2699,20 @@ function openOrderModal(orderId) {
         <button id="addNoteBtn" class="btn btn-primary">${t("addNote")}</button>
       </div>
     ` : ""}
+
+    ${currentUser && currentUser.role === "admin" ? `
+      <div class="note-row">
+        <select id="assignSelect">
+          <option value="">${currentLang === "zh" ? "选择技术员" : "Seleccione técnico"}</option>
+          ${allTechnicians.map(t => {
+            const name = t.name || t.nombre || t.username || t.id || "";
+            if (!name) return "";
+            return `<option value="${name}">${name}</option>`;
+          }).join("")}
+        </select>
+        <button id="assignConfirmBtn" class="btn btn-secondary">${currentLang === "zh" ? "分配" : "Asignar"}</button>
+      </div>
+    ` : ""}
   </div>
 `;
   orderModal.classList.add("show");
@@ -2162,6 +2724,18 @@ function openOrderModal(orderId) {
   const addNoteBtn = document.getElementById("addNoteBtn");
   if (addNoteBtn) {
     addNoteBtn.onclick = () => addNote(orderId);
+  }
+
+  const assignBtn = document.getElementById("assignConfirmBtn");
+  if (assignBtn) {
+    assignBtn.onclick = () => confirmAssign(orderId);
+  }
+
+  if (onDutyBtn && currentUser && currentUser.role === "tecnico") {
+    onDutyBtn.style.display = "inline-flex";
+    onDutyBtn.textContent = currentUser.onDuty ? "En turno" : "Fuera de turno";
+  } else if (onDutyBtn) {
+    onDutyBtn.style.display = "none";
   }
 }
 
@@ -2231,9 +2805,60 @@ async function addNote(orderId) {
   }
 }
 
+function openAssignModal(orderId) {
+  // reutiliza el modal de orden y enfoca el selector
+  openOrderModal(orderId);
+  const select = document.getElementById("assignSelect");
+  if (select) select.focus();
+}
+
 function closeModal() {
   orderModal.classList.remove("show");
   currentModalOrderId = null;
+}
+
+// Notificación nativa del navegador (fallback si no hay permiso: toast)
+function showBrowserNotification(title, body) {
+  try {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "granted") {
+      new Notification(title, { body });
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then(p => {
+        if (p === "granted") new Notification(title, { body });
+      });
+    } else {
+      showToast(body, "info");
+    }
+  } catch (err) {
+    console.warn("Browser notification failed", err);
+  }
+}
+
+async function confirmAssign(orderId) {
+  try {
+    const select = document.getElementById("assignSelect");
+    if (!select) return;
+    const tech = select.value;
+    if (!tech) {
+      showToast("Selecciona un técnico", "warning");
+      return;
+    }
+
+    const orderRef = window.db.collection("orders").doc(orderId);
+    await orderRef.update({
+      assignedTo: tech,
+      history: window.firebase.firestore.FieldValue.arrayUnion(
+        `Reasignado a ${tech} - ${nowString()}`
+      )
+    });
+
+    showToast("Orden asignada", "success");
+    closeModal();
+  } catch (err) {
+    console.error("Asignar técnico", err);
+    showToast("No se pudo asignar", "error");
+  }
 }
 
 // =========================
@@ -2404,7 +3029,7 @@ function refreshCalendar() {
 
   calendar.removeAllEvents();
 
-  const visibleOrders = getVisibleOrdersForUser();
+  const visibleOrders = getOrdersForDashboard();
 
   visibleOrders.forEach(order => {
     let color = "#3b82f6";
@@ -2495,6 +3120,11 @@ async function translateUI() {
     // ❌ ignorar cosas como números
     if (!isNaN(text)) continue;
 
+    // Guarda original para poder revertir a español
+    if (!el.dataset.origText) {
+      el.dataset.origText = el.innerText;
+    }
+
     // 🔥 cache
     if (uiCache[text]) {
       el.innerText = uiCache[text];
@@ -2510,6 +3140,18 @@ async function translateUI() {
     } catch (err) {
       console.error(err);
     }
+  }
+}
+
+// Revierte textos traducidos al chino cuando se vuelve a ES
+function restoreUIOriginals() {
+  document.querySelectorAll("[data-orig-text]").forEach(el => {
+    el.innerText = el.dataset.origText || el.innerText;
+    delete el.dataset.origText;
+  });
+  // limpia cache para evitar mezclas
+  if (typeof uiCache !== "undefined") {
+    Object.keys(uiCache).forEach(k => delete uiCache[k]);
   }
 }
 
@@ -2578,16 +3220,18 @@ function renderMachines() {
 
   container.innerHTML = Object.entries(groups).map(([area, list]) => {
     const countLabel = `${t("registeredMachines") || "Máquinas registradas"}: ${list.length}`;
-    const cards = list.map(m => {
+  const cards = list.map(m => {
       const name = currentLang === "zh" ? (m.name_zh || m.name) : m.name;
       const status = translateMachineStatus(m.status);
       const model = m.model || "****";
+      const canDelete = currentUser && currentUser.role === "admin";
       return `
         <div class="area-machine-card">
           <p class="record-title">${name}</p>
           <p class="record-sub">${m.area || ""}</p>
           <p><b>${t("model") || "Modelo"}:</b> ${model}</p>
           <p><b>${t("status") || "Estado"}:</b> ${status}</p>
+          ${canDelete ? `<button class="btn btn-danger btn-sm machine-delete" data-id="${m.id}">Eliminar</button>` : ""}
         </div>
       `;
     }).join("");
@@ -2601,12 +3245,23 @@ function renderMachines() {
             <small>${countLabel}</small>
           </div>
         </div>
-        <div class="area-machines">
-          ${cards}
-        </div>
-      </div>
-    `;
+    <div class="area-machines">
+      ${cards}
+      ${currentUser && currentUser.role === "admin" ? `<button class="btn btn-light btn-sm area-delete" data-area="${area}">Eliminar área</button>` : ""}
+    </div>
+  </div>
+`;
   }).join("");
+
+  // Bind deletes (solo admin)
+  if (currentUser && currentUser.role === "admin") {
+    document.querySelectorAll(".machine-delete").forEach(btn => {
+      btn.onclick = () => deleteMachine(btn.dataset.id);
+    });
+    document.querySelectorAll(".area-delete").forEach(btn => {
+      btn.onclick = () => deleteArea(btn.dataset.area);
+    });
+  }
 }
 
 // =========================
@@ -2614,18 +3269,30 @@ function renderMachines() {
 // =========================
 async function handleCreateMachine(e) {
   e.preventDefault();
+  if (isMachineSubmitting) return;
+  isMachineSubmitting = true;
+  const submitBtn = machineForm?.querySelector("button[type='submit']");
+  const prevLabel = submitBtn?.textContent;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = currentLang === "zh" ? "保存中..." : "Guardando...";
+  }
 
   console.log("CREANDO MAQUINA...");
 
   try {
     if (!currentUser || currentUser.role !== "admin") {
       showToast("Solo el admin puede crear máquinas", "warning");
+      isMachineSubmitting = false;
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
       return;
     }
 
     if (!window.db) {
       console.error("Firebase NO está disponible");
       showToast("Firebase no conectado", "error");
+      isMachineSubmitting = false;
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
       return;
     }
 
@@ -2676,5 +3343,43 @@ async function handleCreateMachine(e) {
   } catch (error) {
     console.error("ERROR REAL:", error);
     showToast("Error guardando en Firebase", "error");
+  } finally {
+    isMachineSubmitting = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = prevLabel;
+    }
+  }
+}
+
+async function deleteMachine(id) {
+  try {
+    if (!currentUser || currentUser.role !== "admin") {
+      showToast("Solo el admin puede eliminar máquinas", "warning");
+      return;
+    }
+    await window.db.collection("machines").doc(id).delete();
+    showToast("Máquina eliminada", "success");
+  } catch (err) {
+    console.error("Eliminar máquina", err);
+    showToast("No se pudo eliminar la máquina", "error");
+  }
+}
+
+async function deleteArea(areaName) {
+  try {
+    if (!currentUser || currentUser.role !== "admin") {
+      showToast("Solo el admin puede eliminar áreas", "warning");
+      return;
+    }
+    if (!areaName) return;
+    const snap = await window.db.collection("machines").where("area", "==", areaName).get();
+    const batch = window.db.batch();
+    snap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    showToast("Área eliminada con sus máquinas", "success");
+  } catch (err) {
+    console.error("Eliminar área", err);
+    showToast("No se pudo eliminar el área", "error");
   }
 }

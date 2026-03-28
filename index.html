@@ -11,6 +11,9 @@
     <!-- FullCalendar -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css"
         referrerpolicy="no-referrer" />
+
+    <!-- XLSX (SheetJS) para exportar a Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -18,7 +21,7 @@
     <div id="loginScreen" class="login-screen">
 
         <!-- 🔥 BOTÓN DE IDIOMA -->
-        <button id="langToggle" class="lang-btn">ES</button>
+        <button id="langToggle" class="lang-btn" type="button">ES</button>
 
         <div class="login-card">
             <div class="login-brand">
@@ -31,17 +34,15 @@
 
             <form id="loginForm" class="login-form">
                 <div>
-                    <label id="labelUser" data-i18n="user"></label>
-                    <input type="text" id="loginUser" placeholder="" required />
+                    <label id="labelUser" data-i18n="user">Usuario</label>
+                    <input type="text" id="loginUser" placeholder="Usuario" required />
                 </div>
                 <div>
-                    <label id="labelPass" data-i18n="pass"></label>
-                    <input type="password" id="loginPass" placeholder="" required />
+                    <label id="labelPass" data-i18n="pass">Contraseña</label>
+                    <input type="password" id="loginPass" placeholder="Contraseña" required />
                 </div>
 
-                <button id="loginBtn" type="submit" class="btn btn-primary btn-block" data-i18n="login"></button>
-                Ingresar
-                </button>
+                <button id="loginBtn" type="submit" class="btn btn-primary btn-block" data-i18n="login">Ingresar</button>
             </form>
         </div>
     </div>
@@ -118,6 +119,7 @@
                 </div>
 
                 <div class="topbar-actions">
+                    <button id="onDutyBtn" class="btn btn-light" style="display:none;">En turno</button>
                     <button id="topNotifBtn" class="notif-btn">
                         🔔
                         <span id="topNotifBadge" class="notif-dot hidden">0</span>
@@ -165,11 +167,12 @@
 
                     <div class="right-column">
                         <div class="panel">
-                            <div class="panel-header">
-                                <h2 data-i18n="createOrder"></h2>
-                            </div>
+                        <div class="panel-header">
+                            <h2 data-i18n="createOrder"></h2>
+                            <span id="techOnlineBadge" class="tech-dot hidden" title="Técnicos en turno">0</span>
+                        </div>
 
-                            <form id="orderForm" class="order-form">
+                        <form id="orderForm" class="order-form">
                                 <div class="form-grid">
                                     <div class="full">
                                         <label data-i18n="orderTitle"></label>
@@ -177,22 +180,18 @@
                                     </div>
 
                                     <div>
+                                        <label data-i18n="area"></label>
+                                        <select id="orderArea"></select>
+                                    </div>
+
+                                    <div>
                                         <label data-i18n="machine"></label>
                                         <select id="orderMachine" required></select>
-                                        <option value="">Cargando máquinas...</option>
-                                        </select>
                                     </div>
 
                                     <div>
                                         <label data-i18n="assignedTo"></label>
                                         <select id="orderAssigned" required></select>
-                                        <option value="">Cargando técnicos...</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label data-i18n="area"></label>
-                                        <select id="orderArea"></select>
                                     </div>
 
                                     <div>
@@ -281,6 +280,7 @@
                     <div class="panel-header">
                         <h2 data-i18n="charts">Gráficos</h2>
                         <button id="exportCsvBtn" class="btn btn-light" data-i18n="exportCsv">Exportar CSV</button>
+                        <button id="downloadTemplateBtn" class="btn btn-secondary">Plantilla de gráficos</button>
                     </div>
                     <div id="chartsContent" class="charts-grid"></div>
                 </div>
@@ -291,8 +291,10 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h2 data-i18n="machines"></h2>
-                        <button id="btnNewMachine" class="btn btn-primary" data-i18n="newMachine">+ Nueva
-                            máquina</button>
+                        <div class="panel-actions">
+                            <button id="btnNewMachine" class="btn btn-primary" data-i18n="newMachine">+ Nueva
+                                máquina</button>
+                        </div>
                     </div>
                     <div id="areasGrid" class="areas-grid"></div>
                 </div>
@@ -319,7 +321,7 @@
                 <button id="closeMachineModal" class="btn btn-light" data-i18n="close">Cerrar</button>
             </div>
 
-            <form id="machineForm" class="order-form">
+            <form id="machineForm" class="order-form admin-only">
                 <div class="form-grid">
 
                     <div class="full">
@@ -374,6 +376,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 
     <!-- Init Firebase -->
     <script>
@@ -396,6 +400,9 @@
 
     <!-- App -->
     <script src="app.js"></script>
+    <script>
+        // Oculta elementos admin-only si el rol no es admin (se ajusta en app.js)
+    </script>
 </body>
 
 </html>

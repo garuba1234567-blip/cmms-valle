@@ -34,6 +34,21 @@ body {
   display: none !important;
 }
 
+.tech-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+}
+
 /* LOGIN */
 .login-screen {
   position: relative;
@@ -408,6 +423,10 @@ textarea {
   align-items: center;
 }
 
+#onDutyBtn {
+  min-width: 110px;
+}
+
 .topbar h1 {
   margin: 0;
   font-size: 28px;
@@ -523,6 +542,12 @@ textarea {
   align-items: center;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .wrap-mobile {
@@ -1117,6 +1142,31 @@ textarea {
 
   .machine-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* ajustes móviles extra */
+  .stats-grid {
+    gap: 10px;
+  }
+  .stat-card {
+    padding: 12px;
+  }
+  .right-column {
+    order: -1;
+    gap: 12px;
+  }
+  .areas-grid,
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .records-list .record-card {
+    padding: 10px;
+  }
+  .nav-menu {
+    gap: 8px;
+  }
+  .nav-item {
+    justify-content: flex-start;
   }
 
   #calendar {
