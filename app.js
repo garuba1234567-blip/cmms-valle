@@ -200,7 +200,8 @@ Object.assign(LANG.es, {
   quickActions: "Acciones rápidas",
   notes: "Notas",
   addNote: "Agregar nota",
-  history: "Historial"
+  history: "Historial",
+  enableNotifs: "Activar notificaciones"
 });
 
 Object.assign(LANG.zh, {
@@ -261,7 +262,8 @@ Object.assign(LANG.zh, {
   quickActions: "快捷操作",
   notes: "备注",
   addNote: "添加备注",
-  history: "历史记录"
+  history: "历史记录",
+  enableNotifs: "启用通知"
 });
 let currentLang = localStorage.getItem("lang") || "es";
 const VAPID_KEY = "BOeszSHKRYfMR0YWFtDkbBS5EkEy3h97APKSBVOrSBUJudJIL3ZMOuADehSTN6hUcluoF8ASDUvKp_p4uRxaUdI";
@@ -918,6 +920,33 @@ function bindEvents() {
 
   if (markAllReadBtn) {
     markAllReadBtn.addEventListener("click", markAllNotificationsRead);
+  }
+
+  const enableAllNotifsBtn = document.getElementById("enableAllNotifsBtn");
+  if (enableAllNotifsBtn) {
+    enableAllNotifsBtn.addEventListener("click", async () => {
+      if (enableAllNotifsBtn.disabled) return;
+      const original = enableAllNotifsBtn.textContent;
+      enableAllNotifsBtn.disabled = true;
+      enableAllNotifsBtn.textContent = currentLang === "zh" ? "激活中..." : "Activando...";
+      try {
+        const perm = await askNotificationPermission();
+        if (perm !== "granted") {
+          showToast(currentLang === "zh" ? "请允许浏览器通知" : "Autoriza las notificaciones en el navegador", "warning");
+          return;
+        }
+        if (currentUser) {
+          await registerFcmToken(currentUser);
+        }
+        showToast(currentLang === "zh" ? "通知已激活" : "Notificaciones activadas", "success");
+        // dejar desactivado para evitar clics repetidos
+      } catch (err) {
+        console.error("enable notifs", err);
+        showToast(currentLang === "zh" ? "无法激活通知" : "No se pudieron activar notificaciones", "error");
+        enableAllNotifsBtn.disabled = false;
+        enableAllNotifsBtn.textContent = original;
+      }
+    });
   }
 
   if (copyIpBtn) {
@@ -2953,10 +2982,9 @@ function markAllNotificationsRead() {
 }
 
 function askNotificationPermission() {
-  if (!("Notification" in window)) return;
-  if (Notification.permission === "default") {
-    Notification.requestPermission();
-  }
+  if (!("Notification" in window)) return Promise.resolve("unsupported");
+  if (Notification.permission === "granted") return Promise.resolve("granted");
+  return Notification.requestPermission();
 }
 
 function maybePushBrowserNotification(order) {
