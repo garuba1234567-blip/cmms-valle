@@ -643,6 +643,7 @@ function requestCriticalNotifications() {
 async function registerFcmToken(user) {
   try {
     if (!window.firebase || !window.firebase.messaging || !user) return;
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
     const messaging = firebase.messaging();
 
     // Registrar SW
@@ -925,25 +926,30 @@ function bindEvents() {
   const enableAllNotifsBtn = document.getElementById("enableAllNotifsBtn");
   if (enableAllNotifsBtn) {
     enableAllNotifsBtn.addEventListener("click", async () => {
-      if (enableAllNotifsBtn.disabled) return;
+      if (enableAllNotifsBtn.dataset.busy === "1") return;
       const original = enableAllNotifsBtn.textContent;
-      enableAllNotifsBtn.disabled = true;
+      enableAllNotifsBtn.dataset.busy = "1";
       enableAllNotifsBtn.textContent = currentLang === "zh" ? "激活中..." : "Activando...";
       try {
-        const perm = await askNotificationPermission();
+        let perm = Notification.permission;
+        if (perm === "default") {
+          perm = await askNotificationPermission();
+        }
         if (perm !== "granted") {
-          showToast(currentLang === "zh" ? "请允许浏览器通知" : "Autoriza las notificaciones en el navegador", "warning");
-          return;
+          showToast(currentLang === "zh"
+            ? "请在浏览器/页面信息中允许通知"
+            : "Debes permitir notificaciones en el navegador (candado/tune).", "warning");
+        } else {
+          if (currentUser) {
+            await registerFcmToken(currentUser);
+          }
+          showToast(currentLang === "zh" ? "通知已激活" : "Notificaciones activadas", "success");
         }
-        if (currentUser) {
-          await registerFcmToken(currentUser);
-        }
-        showToast(currentLang === "zh" ? "通知已激活" : "Notificaciones activadas", "success");
-        // dejar desactivado para evitar clics repetidos
       } catch (err) {
         console.error("enable notifs", err);
         showToast(currentLang === "zh" ? "无法激活通知" : "No se pudieron activar notificaciones", "error");
-        enableAllNotifsBtn.disabled = false;
+      } finally {
+        enableAllNotifsBtn.dataset.busy = "0";
         enableAllNotifsBtn.textContent = original;
       }
     });
