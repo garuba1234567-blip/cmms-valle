@@ -659,12 +659,34 @@ async function registerFcmToken(user) {
       return;
     }
 
-    // Guardar token en Firestore en users/{uid}
-    if (window.db && user.uid) {
-      await window.db.collection("users").doc(user.uid).set({
+    // Guardar token en Firestore en users/{uid} y por coincidencia de username/name
+    if (window.db) {
+      const payload = {
         fcmToken: token,
         fcmUpdatedAt: new Date().toISOString()
-      }, { merge: true });
+      };
+
+      const batch = window.db.batch();
+
+      if (user.uid) {
+        const ref = window.db.collection("users").doc(user.uid);
+        batch.set(ref, payload, { merge: true });
+      }
+
+      const username = user.username || user.email;
+      const name = user.name;
+
+      if (username) {
+        const snapUser = await window.db.collection("users").where("username", "==", username).get();
+        snapUser.forEach(doc => batch.set(doc.ref, payload, { merge: true }));
+      }
+
+      if (name) {
+        const snapName = await window.db.collection("users").where("name", "==", name).get();
+        snapName.forEach(doc => batch.set(doc.ref, payload, { merge: true }));
+      }
+
+      await batch.commit();
     }
     console.log("FCM token listo");
   } catch (err) {
