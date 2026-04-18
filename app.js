@@ -433,6 +433,7 @@ function listenOrdersRealtime() {
             (
               !o.assignedTo ||
               o.assignedTo === "Técnico de Mantenimiento" ||
+              o.assignedTo === "Disponible" ||
               o.assignedTo === currentUser.name
             )
           );
@@ -534,6 +535,9 @@ let unsubscribeTechs = null;
 let techsOnDutyCount = 0;
 let techsPollInterval = null;
 let allTechnicians = []; // todos los técnicos (sin filtrar onDuty) para re-asignar
+const ORDER_FORM_SELECTION_KEY = "cmms_order_form_selection";
+let orderSelectionShieldInterval = null;
+let lastOrderSelectionApply = "";
 
 // =========================
 // DOM
@@ -913,6 +917,16 @@ function bindEvents() {
 
   if (orderForm) {
     orderForm.addEventListener("submit", handleCreateOrder);
+    initOrderSelectionShield();
+  }
+
+  if (orderArea) {
+    orderArea.addEventListener("change", () => saveOrderFormSelection());
+    orderArea.addEventListener("input", () => saveOrderFormSelection());
+  }
+  if (orderMachine) {
+    orderMachine.addEventListener("change", () => saveOrderFormSelection());
+    orderMachine.addEventListener("input", () => saveOrderFormSelection());
   }
 
   if (filterStatus) {
@@ -1305,7 +1319,8 @@ function getVisibleOrdersForUser() {
   if (currentUser.role === "tecnico") {
     return orders.filter(o =>
       o.assignedTo === currentUser.name ||
-      o.assignedTo === "Técnico de Mantenimiento"
+      o.assignedTo === "Técnico de Mantenimiento" ||
+      o.assignedTo === "Disponible"
     );
   }
 
@@ -1542,6 +1557,102 @@ function machineKey(str) {
   return normalizeKey(str).replace(/[^a-z0-9]/g, "");
 }
 
+function saveOrderFormSelection(areaValue, machineValue) {
+  try {
+    const area = String(areaValue ?? orderArea?.value ?? "").trim();
+    const machine = String(machineValue ?? orderMachine?.value ?? "").trim();
+    localStorage.setItem(ORDER_FORM_SELECTION_KEY, JSON.stringify({ area, machine }));
+  } catch (error) {
+    console.warn("No se pudo guardar selección de orden", error);
+  }
+}
+
+function readOrderFormSelection() {
+  try {
+    const raw = localStorage.getItem(ORDER_FORM_SELECTION_KEY);
+    if (!raw) return { area: "", machine: "" };
+    const parsed = JSON.parse(raw);
+    return {
+      area: String(parsed?.area || "").trim(),
+      machine: String(parsed?.machine || "").trim()
+    };
+  } catch (error) {
+    return { area: "", machine: "" };
+  }
+}
+
+function restoreOrderFormSelectionIfPossible(force = false) {
+  const { area, machine } = readOrderFormSelection();
+  const activeEl = document.activeElement;
+  const interactingWithSelect =
+    activeEl === orderArea ||
+    activeEl === orderMachine;
+
+  if (!force && interactingWithSelect) {
+    return;
+  }
+
+  if (orderArea && area) {
+    const shouldSetArea = force || !String(orderArea.value || "").trim();
+    if (shouldSetArea) {
+      const areaMatch = Array.from(orderArea.options || []).find(
+        (opt) => normalizeKey(opt.value) === normalizeKey(area)
+      );
+      if (areaMatch) {
+        orderArea.value = areaMatch.value;
+      }
+    }
+  }
+
+  const currentArea = String(orderArea?.value || "").trim();
+  const currentMachine = String(orderMachine?.value || "").trim();
+  const signature = `${normalizeKey(currentArea)}|${machineKey(currentMachine)}|${force ? "force" : "idle"}`;
+
+  // Evita repoblar el select continuamente; solo cuando falta valor o forzado.
+  if (signature === lastOrderSelectionApply && !force) {
+    return;
+  }
+  lastOrderSelectionApply = signature;
+
+  if (orderArea && currentArea && (force || !currentMachine)) {
+    populateMachinesForArea(currentArea, machine);
+  } else if (orderMachine && machine) {
+    const machineMatch = Array.from(orderMachine.options || []).find(
+      (opt) => machineKey(opt.value) === machineKey(machine)
+    );
+    if (machineMatch && (force || !currentMachine)) {
+      orderMachine.value = machineMatch.value;
+    }
+  }
+}
+
+function initOrderSelectionShield() {
+  if (!orderForm) return;
+
+  const nativeReset = orderForm.reset.bind(orderForm);
+  orderForm.reset = function resetWithSelectionShield() {
+    const snapshot = readOrderFormSelection();
+    nativeReset();
+
+    const recover = () => {
+      saveOrderFormSelection(snapshot.area, snapshot.machine);
+      restoreOrderFormSelectionIfPossible(true);
+    };
+
+    recover();
+    setTimeout(recover, 0);
+    setTimeout(recover, 120);
+    setTimeout(recover, 350);
+  };
+
+  if (orderSelectionShieldInterval) {
+    clearInterval(orderSelectionShieldInterval);
+  }
+  orderSelectionShieldInterval = setInterval(() => {
+    restoreOrderFormSelectionIfPossible(false);
+  }, 1400);
+}
+
 // =========================
 // SELECTS
 // =========================
@@ -1550,6 +1661,9 @@ async function fillSelects() {
   const typeSelect = document.getElementById("orderType");
   const prioritySelect = document.getElementById("orderPriority");
   const areaSelect = document.getElementById("orderArea");
+  const savedSelection = readOrderFormSelection();
+  const preferredArea = String(areaSelect?.value || savedSelection.area || "").trim();
+  const preferredMachine = String(orderMachine?.value || savedSelection.machine || "").trim();
 
   if (typeSelect && prioritySelect) {
 
@@ -1627,11 +1741,24 @@ async function fillSelects() {
           areaSelect.innerHTML += `<option value="${area}">${area}</option>`;
         });
 
+        if (preferredArea) {
+          const matchedArea = Array.from(areaSelect.options).find(
+            (opt) => normalizeKey(opt.value) === normalizeKey(preferredArea)
+          );
+          if (matchedArea) {
+            areaSelect.value = matchedArea.value;
+          }
+        }
+
         // Listener: al cambiar área, poblar máquinas de esa área
-        areaSelect.onchange = () => populateMachinesForArea(areaSelect.value);
+        areaSelect.onchange = () => {
+          populateMachinesForArea(areaSelect.value, "");
+          saveOrderFormSelection(areaSelect.value, "");
+        };
       }
 
-      populateMachinesForArea(areaSelect ? areaSelect.value : "");
+      populateMachinesForArea(areaSelect ? areaSelect.value : "", preferredMachine);
+      saveOrderFormSelection(areaSelect ? areaSelect.value : "", orderMachine?.value || "");
     } else {
       console.warn("machinesFirebase vacío; no se cargan máquinas en el select");
     }
@@ -1673,6 +1800,11 @@ async function fillSelects() {
       });
     }
 
+    if (techsFound === 0) {
+      const availableLabel = currentLang === "zh" ? "可用" : "Disponible";
+      orderAssigned.innerHTML = `<option value="${availableLabel}">${availableLabel}</option>`;
+    }
+
     // Quitar duplicados por valor
     dedupeSelect(orderAssigned);
 
@@ -1683,12 +1815,13 @@ async function fillSelects() {
     console.error("Error cargando selects (bloque externo):", err);
 
     orderMachine.innerHTML = `<option value="">${phMachine}</option>`;
-    orderAssigned.innerHTML = `<option value="">${phTech}</option>`;
+    const availableLabel = currentLang === "zh" ? "可用" : "Disponible";
+    orderAssigned.innerHTML = `<option value="${availableLabel}">${availableLabel}</option>`;
     showToast("No se pudieron cargar máquinas/técnicos desde Firebase", "warning");
   }
 }
 
-function populateMachinesForArea(areaValue) {
+function populateMachinesForArea(areaValue, preferredMachine = "") {
   if (!orderMachine) return;
 
   const phMachine = currentLang === "zh" ? "选择机器" : "Seleccione una máquina";
@@ -1715,6 +1848,15 @@ function populateMachinesForArea(areaValue) {
   }
 
   dedupeSelect(orderMachine);
+
+  if (preferredMachine) {
+    const match = Array.from(orderMachine.options).find(
+      (opt) => machineKey(opt.value) === machineKey(preferredMachine)
+    );
+    if (match) {
+      orderMachine.value = match.value;
+    }
+  }
 }
 
 // =========================
@@ -1744,6 +1886,11 @@ async function handleCreateOrder(e) {
   const description = document.getElementById("orderDescription").value.trim();
   const machine = document.getElementById("orderMachine").value;
   const area = document.getElementById("orderArea") ? document.getElementById("orderArea").value : "";
+  const assignedInput = document.getElementById("orderAssigned");
+  const assignedToValue = String(assignedInput?.value || "").trim();
+  const assignedTo = assignedToValue || "Disponible";
+  const selectedArea = area;
+  const selectedMachine = machine;
 
   if (!area) {
     showToast("Selecciona un área", "warning");
@@ -1779,7 +1926,7 @@ async function handleCreateOrder(e) {
     priority_zh,
     area,
     area_zh,
-    assignedTo: document.getElementById("orderAssigned").value,
+    assignedTo,
     date: document.getElementById("orderDate").value,
     time: document.getElementById("orderTime").value,
     status: "Pendiente"
@@ -1828,6 +1975,11 @@ async function handleCreateOrder(e) {
     }
 
     orderForm.reset();
+    if (orderArea) {
+      orderArea.value = selectedArea;
+    }
+    populateMachinesForArea(selectedArea, selectedMachine);
+    saveOrderFormSelection(selectedArea, selectedMachine);
     document.getElementById("orderDate").value = getTodayOffset(0);
 
     // Refresco manual visual (aunque el realtime debería entrar)
@@ -2574,7 +2726,7 @@ async function changeOrderStatus(orderId, newStatus) {
 
     // 🔥 SI ES TÉCNICO Y LA ORDEN NO TIENE DUEÑO → LA TOMA
     if (currentUser.role === "tecnico") {
-      const generic = !assignedTo || assignedTo === "Técnico de Mantenimiento";
+      const generic = !assignedTo || assignedTo === "Técnico de Mantenimiento" || assignedTo === "Disponible";
       const isMine = assignedTo === currentUser.name;
       if (!generic && !isMine) {
         showToast("Otro técnico ya tiene esta orden", "warning");
@@ -2633,7 +2785,7 @@ function canEditOrder(order) {
   // Técnico solo si la orden está libre o ya le pertenece
   if (currentUser.role === "tecnico") {
     const assigned = order.assignedTo || "";
-    const generic = assigned === "" || assigned === "Técnico de Mantenimiento";
+    const generic = assigned === "" || assigned === "Técnico de Mantenimiento" || assigned === "Disponible";
     const isMine = assigned === currentUser.name;
     return generic || isMine;
   }
@@ -2944,7 +3096,7 @@ function getNotificationsForCurrentUser() {
   }
 
   return notifications.filter(n =>
-    n.assignedTo === currentUser.name || n.assignedTo === "Técnico de Mantenimiento"
+    n.assignedTo === currentUser.name || n.assignedTo === "Técnico de Mantenimiento" || n.assignedTo === "Disponible"
   );
 }
 
@@ -3020,7 +3172,7 @@ function maybePushBrowserNotification(order) {
   if (!("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
 
-  if (order.assignedTo === "Técnico de Mantenimiento") {
+  if (order.assignedTo === "Técnico de Mantenimiento" || order.assignedTo === "Disponible") {
     new Notification("Nueva tarea asignada", {
       body: `${order.title} • ${currentLang === "zh" ? order.machine_zh || order.machine : order.machine}`
     });

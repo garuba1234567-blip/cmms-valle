@@ -1148,23 +1148,29 @@ textarea {
   .stats-grid {
     gap: 10px;
   }
+
   .stat-card {
     padding: 12px;
   }
+
   .right-column {
     order: -1;
     gap: 12px;
   }
+
   .areas-grid,
   .charts-grid {
     grid-template-columns: 1fr;
   }
+
   .records-list .record-card {
     padding: 10px;
   }
+
   .nav-menu {
     gap: 8px;
   }
+
   .nav-item {
     justify-content: flex-start;
   }
